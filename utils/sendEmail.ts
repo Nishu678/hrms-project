@@ -36,7 +36,12 @@ import nodemailer from "nodemailer";
 
 export const sendEmail = async ({ to, subject, text, html }: any) => {
     try {
+        console.log("📧 Starting email send process...");
+        console.log("📧 To:", to);
+        console.log("📧 Subject:", subject);
+
         const testAccount = await nodemailer.createTestAccount();
+        console.log("📧 Ethereal account created:", testAccount.user);
 
         const transporter = nodemailer.createTransport({
             host: "smtp.ethereal.email",
@@ -47,6 +52,8 @@ export const sendEmail = async ({ to, subject, text, html }: any) => {
             },
         });
 
+        console.log("📧 Transporter created, sending email...");
+
         const info = await transporter.sendMail({
             from: '"HRMS App" <no-reply@hrms.com>',
             to,
@@ -55,11 +62,13 @@ export const sendEmail = async ({ to, subject, text, html }: any) => {
             html,
         });
 
-        console.log("Preview URL:", nodemailer.getTestMessageUrl(info));
+        console.log("✅ Email sent successfully!");
+        console.log("📧 Message ID:", info.messageId);
+        console.log("🔗 Preview URL:", nodemailer.getTestMessageUrl(info));
 
         return info;
     } catch (error) {
-        console.log("Email error:", error);
+        console.log("❌ Email error:", error);
         throw new Error("Email not sent");
     }
 };

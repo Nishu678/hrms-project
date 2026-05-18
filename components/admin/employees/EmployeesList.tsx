@@ -1,7 +1,12 @@
 "use client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -18,9 +23,10 @@ import axios from "axios";
 import AddEmployeeModal from "./AddEmployeeModal";
 import formatDate from "@/components/common/formatDate";
 import DeleteEmployeeModal from "./DeleteEmployeeModal";
+import AppPagination from "@/components/common/app-pagination";
 
 interface Employee {
-  id: string;
+  _id: string;
   name: string;
   phone: string;
   employeeId: string;
@@ -33,7 +39,7 @@ interface Employee {
 
 const mockEmployees: Employee[] = [
   {
-    id: "EMP001",
+    _id: "EMP001",
     name: "Eleanor Pena",
     jobTitle: "Product Manager",
     department: "Marketing",
@@ -44,7 +50,7 @@ const mockEmployees: Employee[] = [
     joiningDate: "2024-01-15",
   },
   {
-    id: "EMP002",
+    _id: "EMP002",
     name: "Cody Fisher",
     jobTitle: "Network Admin",
     department: "IT",
@@ -55,7 +61,7 @@ const mockEmployees: Employee[] = [
     joiningDate: "2024-02-20",
   },
   {
-    id: "EMP003",
+    _id: "EMP003",
     name: "Esther Howard",
     jobTitle: "Recruiter",
     department: "HR",
@@ -66,7 +72,7 @@ const mockEmployees: Employee[] = [
     joiningDate: "2024-03-10",
   },
   {
-    id: "EMP004",
+    _id: "EMP004",
     name: "Robert Fox",
     jobTitle: "Software Engineer",
     department: "IT",
@@ -77,7 +83,7 @@ const mockEmployees: Employee[] = [
     joiningDate: "2024-04-05",
   },
   {
-    id: "EMP005",
+    _id: "EMP005",
     name: "Kristin Watson",
     jobTitle: "Developer",
     department: "Product",
@@ -88,7 +94,7 @@ const mockEmployees: Employee[] = [
     joiningDate: "2024-05-12",
   },
   {
-    id: "EMP006",
+    _id: "EMP006",
     name: "Annie Johnson",
     jobTitle: "Financial Analyst",
     department: "Finance",
@@ -110,7 +116,7 @@ const getInitials = (name: string): string => {
 };
 
 const getStatusVariant = (
-  status: Employee["status"],
+  status: Employee["employmentStatus"],
 ): "success" | "warning" | "secondary" => {
   switch (status) {
     case "active":
@@ -153,6 +159,8 @@ const getAvatarColor = (name: string): string => {
 };
 
 const EmployeesList = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
   const [openAddEmployeeModal, setOpenAddEmployeeModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Employee | null>(null);
@@ -161,18 +169,24 @@ const EmployeesList = () => {
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ["employeesList"],
+    queryKey: ["employeesList", currentPage, itemsPerPage],
     queryFn: async () => {
-      const response = await axios.get("/api/employees");
+      const response = await axios.get("/api/employees", {
+        params: {
+          page: currentPage,
+          limit: itemsPerPage,
+        },
+      });
       return response?.data;
     },
   });
 
   const employees = employeesList?.data || mockEmployees;
+  const totalItems = employeesList?.pagination?.total || employees?.length || 0;
 
   return (
     <>
-      <Card className="h-full min-h-screen">
+      <Card className="h-full min-h-screen flex flex-col">
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1">
@@ -186,7 +200,7 @@ const EmployeesList = () => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
-                  {employees.length} employees
+                  {totalItems} employees
                 </span>
               </div>
             </div>
@@ -211,7 +225,7 @@ const EmployeesList = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0 max-h-[800px] overflow-y-auto">
+        <CardContent className="p-0 flex-1 overflow-y-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -234,7 +248,7 @@ const EmployeesList = () => {
                 </TableRow>
               ) : employees?.length > 0 ? (
                 employees?.map((employee: Employee) => (
-                  <TableRow key={employee?.id}>
+                  <TableRow key={employee?._id}>
                     <TableCell className="font-medium pl-6 py-2">
                       <div className="flex items-center gap-3">
                         <div
@@ -274,6 +288,13 @@ const EmployeesList = () => {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-yellow/10 border border-gray-200 hover:border-gray-300"
+                          onClick={() => {
+                            setSelectedUser({
+                              ...employee,
+                              _id: employee._id,
+                            });
+                            setOpenAddEmployeeModal(true);
+                          }}
                         >
                           <Edit className="h-4 w-4 text-yellow-500 transition-transform duration-200 hover:scale-110" />
                         </Button>
@@ -284,7 +305,7 @@ const EmployeesList = () => {
                           onClick={() => {
                             setSelectedUser({
                               ...employee,
-                              id: employee.employeeId,
+                              _id: employee._id,
                             });
                             setOpenDeleteModal(true);
                           }}
@@ -305,11 +326,20 @@ const EmployeesList = () => {
             </TableBody>
           </Table>
         </CardContent>
+        <CardFooter className="border-t p-4 mt-auto">
+          <AppPagination
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={totalItems}
+          />
+        </CardFooter>
       </Card>
       <AddEmployeeModal
         open={openAddEmployeeModal}
         onOpenChange={setOpenAddEmployeeModal}
         onEmployeeAdded={() => refetch()}
+        employee={selectedUser}
       />
       <DeleteEmployeeModal
         open={openDeleteModal}

@@ -44,7 +44,9 @@ export async function POST(req: Request) {
                 id: userExist._id.toString(),
                 email: userExist.email,
                 name: userExist.name,
-                role: userExist.role
+                role: userExist.role,
+                isFirstLogin: userExist.isFirstLogin,
+                mustChangePassword: userExist.mustChangePassword
             }
         }, { status: 200 });
 

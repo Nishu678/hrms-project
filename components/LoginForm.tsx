@@ -100,11 +100,16 @@ const LoginForm = () => {
   // Login mutation with TanStack Query
   const loginMutation = useMutation({
     mutationFn: (data: LoginFormValues) => login(data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       // Token is now stored in HTTP-only cookie - no client storage needed!
-      // Redirect to dashboard
-      router.push("/dashboard");
-      router.refresh();
+      // Only employees should be forced to change password on first login
+      if (data.user.isFirstLogin && data.user.role === "employee") {
+        router.push("/change-password");
+      } else {
+        // Redirect to dashboard
+        router.push("/dashboard");
+        router.refresh();
+      }
     },
   });
 

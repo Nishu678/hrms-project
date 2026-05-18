@@ -16,7 +16,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Employee {
-  id: string;
+  _id: string;
   name: string;
   email?: string;
   phone?: string;
@@ -72,12 +72,12 @@ export default function DeleteEmployeeModal({
 
   const handleDelete = () => {
     console.log("handleDelete called, employee:", employee);
-    console.log("employee.id:", employee?.id);
-    if (!employee?.id) {
-      console.log("No employee id, returning early");
+    console.log("employee._id:", employee?._id);
+    if (!employee?._id) {
+      console.log("No employee _id, returning early");
       return;
     }
-    deleteEmployeeMutation.mutate(employee.id);
+    deleteEmployeeMutation.mutate(employee._id);
   };
   return (
     <Dialog open={open} onOpenChange={setOpen}>

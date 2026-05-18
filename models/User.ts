@@ -6,6 +6,8 @@ import bcrypt from "bcryptjs";
 
 const UserSchema = new mongoose.Schema(
     {
+        isFirstLogin: { type: Boolean, default: true },
+        mustChangePassword: { type: Boolean, default: false },
         name: { type: String, required: true },
 
         email: { type: String, required: true, unique: true },
@@ -19,6 +21,8 @@ const UserSchema = new mongoose.Schema(
         isBlocked: { type: Boolean, default: false },
 
         role: { type: String, enum: ["admin", "employee"], default: "employee" },
+
+        employeeId: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" }, // Link to Employee model
     },
     {
         timestamps: true, // auto createdAt & updatedAt

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -80,12 +80,14 @@ interface AddEmployeeModalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onEmployeeAdded?: () => void;
+  employee?: Employee | null;
 }
 
 export default function AddEmployeeModal({
   open: controlledOpen,
   onOpenChange,
   onEmployeeAdded,
+  employee,
 }: AddEmployeeModalProps) {
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -173,8 +175,122 @@ export default function AddEmployeeModal({
     },
   });
 
+  useEffect(() => {
+    if (employee) {
+      setValue("name", employee.name);
+      setValue("email", employee.email || "");
+      setValue("phone", employee.phone || "");
+      setValue(
+        "dateOfBirth",
+        employee.dateOfBirth
+          ? new Date(employee.dateOfBirth).toISOString().split("T")[0]
+          : "",
+      );
+      setValue("gender", employee.gender || "");
+      setValue("employeeId", employee.employeeId || "");
+      setValue("department", employee.department || "");
+      setValue("jobTitle", employee.jobTitle || "");
+      setValue("employmentType", employee.employmentType || "");
+      setValue(
+        "joiningDate",
+        employee.joiningDate
+          ? new Date(employee.joiningDate).toISOString().split("T")[0]
+          : "",
+      );
+      setValue("employmentStatus", employee.employmentStatus || "");
+      setValue("workLocation", employee.workLocation || "");
+      setValue("workShift", employee.workShift || "");
+      setValue("notes", employee.notes || "");
+      setValue("salaryAmount", employee.salary?.amount?.toString() || "");
+      setValue("salaryCurrency", employee.salary?.currency || "USD");
+      setValue("salaryPeriod", employee.salary?.payPeriod || "monthly");
+      setValue("street", employee.address?.street || "");
+      setValue("city", employee.address?.city || "");
+      setValue("state", employee.address?.state || "");
+      setValue("zipCode", employee.address?.zipCode || "");
+      setValue("country", employee.address?.country || "USA");
+      setValue("emergencyContactName", employee.emergencyContact?.name || "");
+      setValue(
+        "emergencyContactRelationship",
+        employee.emergencyContact?.relationship || "",
+      );
+      setValue("emergencyContactPhone", employee.emergencyContact?.phone || "");
+      setValue("skills", employee.skills?.join(", ") || "");
+      setValue("qualifications", employee.qualifications?.join(", ") || "");
+    } else {
+      reset();
+    }
+  }, [employee, setValue, reset]);
+
+  // Mutation for updating employee
+  const updateEmployeeMutation = useMutation({
+    mutationFn: async (data: EmployeeFormData) => {
+      const response = await axios.put("/api/employees", {
+        id: employee?._id,
+        // Basic fields
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
+        gender: data.gender,
+        employeeId: data.employeeId,
+        department: data.department,
+        jobTitle: data.jobTitle,
+        employmentType: data.employmentType,
+        joiningDate: new Date(data.joiningDate),
+        employmentStatus: data.employmentStatus,
+        workLocation: data.workLocation,
+        workShift: data.workShift,
+        notes: data.notes,
+
+        // Nested objects
+        salary: {
+          amount: data.salaryAmount ? parseFloat(data.salaryAmount) : undefined,
+          currency: data.salaryCurrency,
+          payPeriod: data.salaryPeriod,
+        },
+        address: {
+          street: data.street,
+          city: data.city,
+          state: data.state,
+          zipCode: data.zipCode,
+          country: data.country,
+        },
+        emergencyContact: {
+          name: data.emergencyContactName,
+          relationship: data.emergencyContactRelationship,
+          phone: data.emergencyContactPhone,
+        },
+
+        // Array fields
+        skills: data.skills ? data.skills.split(",").map((s) => s.trim()) : [],
+        qualifications: data.qualifications
+          ? data.qualifications.split(",").map((q) => q.trim())
+          : [],
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success("Employee updated successfully!");
+      reset();
+      setOpen(false);
+      if (onEmployeeAdded) {
+        onEmployeeAdded();
+      }
+    },
+    onError: (error) => {
+      console.error("Error updating employee:", error);
+      toast.error("Failed to update employee. Please try again.");
+    },
+  });
+
   const onSubmit = (data: EmployeeFormData) => {
-    addEmployeeMutation.mutate(data);
+    // Use update mutation if editing, otherwise use create mutation
+    if (employee?._id) {
+      updateEmployeeMutation.mutate(data);
+    } else {
+      addEmployeeMutation.mutate(data);
+    }
   };
 
   return (
@@ -184,7 +300,9 @@ export default function AddEmployeeModal({
         style={{ width: "40vw", maxWidth: "1100px" }}
       >
         <SheetHeader>
-          <SheetTitle className="text-xl">Add New Employee</SheetTitle>
+          <SheetTitle className="text-xl">
+            {employee ? "Edit Employee" : "Add Employee"}
+          </SheetTitle>
           <SheetDescription>
             Fill in the employee details below. Click save when you&apos;re
             done.
@@ -600,11 +718,22 @@ export default function AddEmployeeModal({
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
+              disabled={
+                addEmployeeMutation.isPending ||
+                updateEmployeeMutation.isPending
+              }
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={addEmployeeMutation.isPending}>
-              {addEmployeeMutation.isPending && (
+            <Button
+              type="submit"
+              disabled={
+                addEmployeeMutation.isPending ||
+                updateEmployeeMutation.isPending
+              }
+            >
+              {(addEmployeeMutation.isPending ||
+                updateEmployeeMutation.isPending) && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
               Save Employee
